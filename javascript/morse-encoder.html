@@ -79,7 +79,7 @@ function morseEncode() {
     "....",
     "..",
     ".---",
-    ".-.-",
+    "-.-",
     ".-..",
     "--",
     "-.",
@@ -147,7 +147,7 @@ function morseEncode() {
       j = j-1; 
     }
     if ( binStr.charAt(i) == "1" ) {
-      intVal = intVal + (2**j);
+      intVal = intVal + Math.pow(2,j);
     }
     if ( j == 0 ) {
       intArr.push(intVal);
