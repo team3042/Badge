@@ -1,6 +1,6 @@
-#define DELAY_MS 100
+#define DELAY_MS 80
 
-int led = 0; //attiny84 pin 13
+int led = 10; //attiny84 pin 2
 //int led = 4; //attiny85 pin 3
 
 // the setup routine runs once when you press reset:
@@ -19,13 +19,13 @@ void loop() {
     for ( j=0; j<=15; j++ ) {
       if ( (morseWord[i] & (1<<(15-j))) > 0 ) {
         digitalWrite(led, HIGH);
-        delay(DELAY_MS);
+        _delay_ms(DELAY_MS);
       } else {
         digitalWrite(led, LOW);
-        delay(DELAY_MS);
+        _delay_ms(DELAY_MS);
       }
     }
     digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
-    delay(DELAY_MS*14);               // wait for a while
+    _delay_ms(DELAY_MS*14);               // wait for a while
   }
 }
