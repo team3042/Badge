@@ -16,7 +16,7 @@
 #include <math.h>
 
 // Define pins -- gcc uses different pin numbers than arduino studio
-#define PIN_LED1  PB0
+#define PIN_LED1  PB4
 #define PORT  PORTB
 
 // Define the delay time in ms
