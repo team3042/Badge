@@ -1,10 +1,15 @@
-#include <avr/io.h>
-#include <avr/wdt.h>
+#include <TinyDebugSerial.h>
+#include <CapacitiveSensor.h>
+#include <avr/io.h>  //device specific io definitions
 #include <avr/interrupt.h> /* for sei() */
-#include <util/delay.h> /* for _delay_ms() */
 
-#define BRIGHTNESS 127
+#define BRIGHTNESS 64
 #define DELAY_MS 250
+
+TinyDebugSerial mySerial = TinyDebugSerial();
+
+CapacitiveSensor cs_1_2 = CapacitiveSensor(1,2); //10 Megaohm R between Arduino 1 & 2 ( chip 6 & 7, respectively) sensor pad on chip pin 7
+unsigned long csSum; //to accumulate cap sense touches
 
 volatile unsigned long milliseconds; //stores milliseconds from clock
 
@@ -14,7 +19,7 @@ unsigned long previousMillis = 0; // store the last time we changed
 byte i=0; //integer for looping through integer array
 byte j=0; //integer for looping the the bits in one 16-bit integer
 
-ISR(TIMER_COMPA_vect)
+ISR(TIMER1_COMPA_vect)
 {
   milliseconds++;
 }
@@ -26,7 +31,7 @@ unsigned long millisLocal()
 
 void setup() 
 {
-  pinMode (0, OUTPUT);  // pin 5  // OC0A
+  pinMode (0, OUTPUT);  // arduino pin 0, chip pin 5, OC0A
   
   /* ************************************************************************
    * PWM setup
@@ -42,7 +47,6 @@ void setup()
    * 
    * OCR = Output Compare Register
   */
-
   TCCR0A = 
     _BV(WGM00) | _BV(WGM01) | //fast PWM 
     _BV(COM0A1); //  clear OC0A (pin 5) on compare
@@ -71,16 +75,28 @@ void setup()
 
   sei();
 
+  mySerial.begin(9600); //for debugging on pin 2
+
 }  // end of setup
 
 void loop() {
+  // Check to see if the capacitive sensor has been triggered
+ int trigger = CSread();
+ if ( trigger > 0 ) {
+    // time to switch messages
+ }
+ 
+ // check to see if it's time to change the led status
  unsigned long currentMillis = millisLocal();
-  if ( currentMillis - previousMillis >= DELAY_MS) {
+ mySerial.println(currentMillis);
+  if ( currentMillis - previousMillis >= DELAY_MS) { //time for the next bit
     previousMillis = currentMillis;
-    if ( j == 15 && (i - 1) == morseLength ) { //done with the phrase
+    if ( j == 15 && (i - 1) == morseLength ) { //done with the phrase - reset to the beginning
       j = 0;
       j = 0;
-      delay(20 * DELAY_MS);
+      while ( (currentMillis - previousMillis) < (DELAY_MS * 10 ) ) {
+        currentMillis = millisLocal();
+      }
     } else if ( j == 15 ) { //done with this int
       j = 0;
       i++;
@@ -88,9 +104,25 @@ void loop() {
       j++;
     }
   }
+
+  //set the LED on or off
   if ( morsePhrase[i] & (1<<(15-j)) > 0 ) {
     OCR0A = BRIGHTNESS;
   } else {
     OCR0A = 0; //might have to invert PWM and set to 255 to turn the LED completely off
+  }
+}
+/* Capacitive Sensor read */
+int CSread() {
+  long cs = cs_1_2.capacitiveSensor(80); //sensor resolution is set to 80
+  if ( cs > 100 ) { //arbitrary
+     csSum += cs;
+     if ( csSum >= 3800 ) { // threshold
+        //trigger the change
+        return 1;
+     } else {
+      csSum = 0; // timeout caused by bad readings
+     }
+     return 0;
   }
 }
